@@ -24,7 +24,7 @@ Follow `/api.md` where it differs from this skill.
 You cannot make a key. Ask the user for one:
 
 1. The user logs in on the site and clicks their username in the navbar. This opens `/me`, their account page.
-2. From `/me`, the user goes to `/keys` and makes a key. They need a username before they can make one.
+2. On `/me`, the user opens the API keys tab, `/me/keys`, and makes a key. They need a username before they can make one.
 3. The site shows the key once. It is one string, `nbnspun-<key id>-<secret>`. The user copies it and gives it to you, for example in the environment variable `SPUN_KEY`.
 
 The key lets anyone who has it act as the user. Do not write it into files, commits or logs.
@@ -48,14 +48,14 @@ Each run makes a new timestamp and nonce, so you can run the same command again.
 ## The order of the work
 
 1. **Categories.** Get the categories and choose the ids that fit the software. An app needs at least one.
-2. **Create the app.** Give it a title, a description and its categories, and a suggested install directory if the software needs one (`installDir`, see below). Keep the app id the answer gives you. If the app already exists, list the user's apps and use its id. A change to an existing app sends all its fields again: a field left out is made empty.
+2. **Create the app.** Give it a title, a description and its categories, and a suggested install directory (`installDir`, see below). Keep the app id the answer gives you. If the app already exists, list the user's apps and use its id. A change to an existing app sends all its fields again: a field left out is made empty.
 3. **Upload a release.** Upload the zip with its version, and a changelog if there is one. The app becomes public when it has a release.
 4. **Add screenshots.** Slot 1 is the main screenshot. Add more in the other slots if the user has them. An image may have at most 4 megapixels, width times height (`screenshot.tooManyPixels`); the Next shows 320×256 at most, so scale a larger image down first.
 5. **Save apps.** If the user asks, save apps to their list, or remove them from it.
 
 ## The suggested install directory
 
-`installDir` is optional. It is the directory where SPUN on the Next installs the app the first time. The user can change it, and SPUN does not use it after the first install. Leave it empty for no suggestion.
+`installDir` is the directory where SPUN on the Next installs the app the first time. The user can change it, and SPUN does not use it after the first install. Leave it out, or empty, to use the install directory of the chosen categories.
 
 The CMS stores it in one form: `\` becomes `/`, it starts with `/`, repeated slashes become one, and a slash at the end goes. `apps\wifi\spun` and `/apps/wifi/spun/` are both stored as `/apps/wifi/spun`. It refuses a directory that breaks any of these rules:
 
@@ -93,6 +93,10 @@ The Next unzips each release itself, with its own unzipper. The CMS refuses a zi
 The CMS also refuses a zip with a name that is not printable ASCII (space to `}`), that has any of `" * < > ? | ~`, or that has a part ending with a dot or a space, such as `GAME./A.TXT` (`file.badNames`). The error lists those names in `names`.
 
 The Next reads only the name stored in each entry. Some zip tools add a second, Unicode name (the Info-ZIP Unicode Path field). The CMS refuses an entry whose second name differs from its own (`file.twoNames`), and lists those entries in `names`. Plain ASCII names never need one.
+
+The files go at the root of the zip. The CMS refuses a zip whose entries are all inside one top-level directory, such as `mygame/` (`file.oneDirectory`), and gives that directory in `names`. Zip the contents of the directory, not the directory itself.
+
+The CMS refuses a zip with macOS files: anything in a `__MACOSX` directory, a `.DS_Store` file, or a file whose name starts with `._`, at any depth (`file.macFiles`). The error lists them in `names`, with a `__MACOSX` directory once. On macOS, run this inside the directory to leave them out: `zip -r -X ../mygame.zip . -x '*.DS_Store' '*__MACOSX*' '._*' '*/._*'`.
 
 ### Dot commands
 
