@@ -48,7 +48,7 @@ Each run makes a new timestamp and nonce, so you can run the same command again.
 ## The order of the work
 
 1. **Categories.** Get the categories and choose the ids that fit the software. An app needs at least one.
-2. **Create the app.** Give it a title, a description and its categories, and a suggested install directory (`installDir`, see below). Keep the app id the answer gives you. If the app already exists, list the user's apps and use its id. A change to an existing app sends all its fields again: a field left out is made empty.
+2. **Create the app.** Give it a title, a description and its categories, a suggested install directory (`installDir`, see below), and the minimum core version if the app needs one (`minCore`, see below). Leave `visibility` as `listed` unless the user asks otherwise. Set it to `unlisted` for an app that is a part of a larger app: the catalogue lists and other users' searches leave it out, but the dependency picker, downloads and dependencies still find it. `secret` also keeps it out of other publishers' dependency picker, except by its exact id or alias. Keep the app id the answer gives you. If the app already exists, list the user's apps and use its id. A change to an existing app sends all its fields again: a field left out is made empty.
 3. **Upload a release.** Upload the zip with its version, and a changelog written for the Next (see below). The app becomes public when it has a release.
 4. **Add screenshots.** Slot 1 is the main screenshot. Add more in the other slots if the user has them. An image may have at most 4 megapixels, width times height (`screenshot.tooManyPixels`); the Next shows 320×256 at most, so scale a larger image down first.
 5. **Save apps.** If the user asks, save apps to their list, or remove them from it.
@@ -66,6 +66,15 @@ The CMS stores it in one form: `\` becomes `/`, it starts with `/`, repeated sla
 - No part that ends with a dot or a space, such as `/games./x` (`installDir.partEnd`).
 - Not `/`, and not `/nextzxos`, `/sys`, `/dot` or `/machines` or anything under them, in any case (`installDir.banned`).
 
+## The minimum core version
+
+`minCore` is the oldest Next core that the app runs on, as `major.minor.sub`, for example `3.01.10`. Leave it out, or empty, when the app runs on any core. SPUN on the Next does not install any apps that depend on a newer core, directly or through a dependency. It refuses a version that breaks any of these rules:
+
+- Three numbers with dots between them: one or two digits for major and minor, one to three for sub (`minCore.format`).
+- Major and minor from 0 to 15, and sub from 0 to 255 (`minCore.range`).
+
+`GET /api/apps/{id}` returns it in the same form, or `null`. A change to an existing app sends `minCore` again with the other fields: a field left out removes the minimum.
+
 ## The changelog
 
 People read the changelog on the Next, an 8-bit machine, so write it for the Next:
@@ -74,6 +83,7 @@ People read the changelog on the Next, an 8-bit machine, so write it for the Nex
 - Plain ASCII only, no UTF-8. The CMS takes printable ASCII and line feeds, up to 1024 characters.
 - No markdown.
 - No links.
+- No line feeds to wrap text. `.spun` and the CMS wrap lines by themselves, so a line feed in the middle of a sentence breaks the line early on the Next. Use a line feed only to start a new item.
 
 ## What the CMS checks before it accepts a release
 
@@ -89,7 +99,7 @@ Check the zip and the version before you upload. The CMS refuses a release that 
 
 The Next unzips each release itself, with its own unzipper. The CMS refuses a zip that this unzipper cannot unzip (`file.incompatible`) or that is not a readable zip (`file.notZip`):
 
-- At most 4 MB (`file.tooLarge`).
+- At most 4 MB, or the account's own limit when an admin has set one (`file.tooLarge`; `max` gives the limit in bytes).
 - The files in it add up to at most 16 MB unpacked (`file.unpackedTooLarge`).
 - One file, not split across several disks or parts.
 - Fewer than 65535 entries.
